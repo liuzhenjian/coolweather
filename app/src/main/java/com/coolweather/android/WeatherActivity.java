@@ -1,9 +1,11 @@
 package com.coolweather.android;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -22,6 +24,7 @@ import com.bumptech.glide.Glide;
 import com.coolweather.android.db.County;
 import com.coolweather.android.gson.Forecast;
 import com.coolweather.android.gson.Weather;
+import com.coolweather.android.service.AutoUpdateService;
 import com.coolweather.android.util.HttpUtil;
 import com.coolweather.android.util.Utility;
 
@@ -83,8 +86,10 @@ public class WeatherActivity extends AppCompatActivity {
         if (weatherString!=null){
             //有缓存时直接解析天气数据
             Weather weather= Utility.handleWeatherResponse(weatherString);
-            mWeatherId=weather.basic.weatherId;
-            showWeatherInfo(weather);
+            if (weather != null) {
+                mWeatherId=weather.basic.weatherId;
+                showWeatherInfo(weather);
+            }
         }else {
             //无缓存时去服务器查询天气
             mWeatherId=getIntent().getStringExtra("weather_id");
@@ -121,7 +126,7 @@ public class WeatherActivity extends AppCompatActivity {
                 weatherId+"&key=71a2a170de974d728e0b3e5ecc68c30d";
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -132,7 +137,7 @@ public class WeatherActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 final String responseText=response.body().string();
                 final Weather weather=Utility.handleWeatherResponse(responseText);
                 runOnUiThread(new Runnable() {
@@ -162,12 +167,12 @@ public class WeatherActivity extends AppCompatActivity {
         String requestBingPic="http://guolin.tech/api/bing_pic";
         HttpUtil.sendOkHttpRequest(requestBingPic, new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 e.printStackTrace();
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 final String bingPic=response.body().string();
                 SharedPreferences.Editor editor=PreferenceManager.
                         getDefaultSharedPreferences(WeatherActivity.this).edit();
@@ -219,5 +224,7 @@ public class WeatherActivity extends AppCompatActivity {
         carWashText.setText(carWash);
         sportText.setText(sport);
         weatherLayout.setVisibility(View.VISIBLE);
+        Intent intent=new Intent(this, AutoUpdateService.class);
+        startService(intent);
     }
 }
